@@ -1,0 +1,30 @@
+Metadata-Version: 2.1
+Name: pryeact
+Version: 0.0.1
+Summary: Package to componentize interface items created in QT Design.
+Home-page: https://github.com/viniciussousa891/pryeact
+Author: Vinicius de Sousa Carvalho
+Author-email: sousav387@gmail.com
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+License-File: LICENSE
+
+pryeact
+=============
+
+#### Esse pacote python converte interfaces gráficas criadas no Qt designer para python usando o conceito de componente.
+
+#### Exemplos
+
+
+#### Requisitos
+#### Pyqt5
+
+#### Instalação
+
+    `pip install pryeact`
+    
+#### Uso
