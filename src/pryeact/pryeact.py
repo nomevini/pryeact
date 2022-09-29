@@ -27,11 +27,11 @@ class Pryeact:
         name_path = ''
         try:
             path = './'
-            name_path = f'{path}{page_name}'
+            name_path = f'{path}{page_name}/components'
             os.makedirs(name_path)
 
             # criar aquivo principal
-            app_archive = open(f'{name_path}/app.py', 'w')
+            app_archive = open(f'{path}{page_name}/app.py', 'w')
 
             # SEQUENCIA DE ETAPAS
             # CRIAR AS PASTAS
@@ -95,7 +95,7 @@ class Pryeact:
                     component.write(f'from PyQt5 import QtWidgets, QtGui, QtCore\n\n\n'
                                     f'def {atribute}():\n')
                 # adicionando os imports no arquivo principal (app.py)
-                app_archive.write(f'from {atribute}.{atribute} import {atribute}\n')
+                app_archive.write(f'from components.{atribute}.{atribute} import {atribute}\n')
                 component.close()
 
             app_archive.write('\n\n')
@@ -225,8 +225,6 @@ class Pryeact:
         except NameError:
             pass
 
-# EXAMPLE
-'''
+
 tela = Pryeact()
 tela.componentize('tela_main', 'pages/tela_main.py', 'Ui_main')
-'''
