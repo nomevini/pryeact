@@ -12,34 +12,24 @@ class Pryeact:
     # example windows_name=login, window_path=pages/login.py
     def componentize(self, window_name, window_path, page_name):
         # carregar a tela
-        global app_archive, component, path_component, atribute_line
-        spec = importlib.util.spec_from_file_location(f'{window_name}', f'{window_path}')
-        foo = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(foo)
-        create_window = getattr(foo, page_name)
-        window = create_window()
-        window.setupUi(self.MainWindow)
-        # carregar os atributos
-        atributes = list(window.__dict__.keys())
-
-        # criar pasta para a tela no diretorio atual
-        # recebe um caminho
-        name_path = ''
         try:
+            global app_archive, component, path_component, atribute_line, name_path
+            spec = importlib.util.spec_from_file_location(f'{window_name}', f'{window_path}')
+            foo = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(foo)
+            create_window = getattr(foo, page_name)
+            window = create_window()
+            window.setupUi(self.MainWindow)
+
+            # carregar os atributos
+            atributes = list(window.__dict__.keys())
+            name_path = ''
             path = './'
             name_path = f'{path}{page_name}/components'
             os.makedirs(name_path)
 
             # criar aquivo principal
             app_archive = open(f'{path}{page_name}/app.py', 'w')
-
-            # SEQUENCIA DE ETAPAS
-            # CRIAR AS PASTAS
-            # IDENTIFICAR NOS ATRIBUTOS AQUELES QUE PRECISAM RECEBER PARÂMETRO - feito
-            # CRIAR O 'def' DE CADA COMPONENTE
-            # ENVIAR AS LINHAS PARA CADA COMPONENTE
-            # CRIAR A DEFINIÇÃO DE CADA COMPONENTE
-            # CRIAR O RETURN DE TODOS
 
             # descobrir quais atributos precisam de imports para criar os paramêtros
             window_archive = open(window_path, 'r')
@@ -64,7 +54,6 @@ class Pryeact:
                 if 'retranslateUi' in line:
                     break
                 elif 'self.' in line.lstrip()[:5]:
-                    print(line)
                     component = line.lstrip().replace(' = ', '.').split('.')[1]
                     if component not in components.keys():
                         components[component] = None
@@ -101,8 +90,6 @@ class Pryeact:
             app_archive.write('\n\n')
             # fazer leitura do arquivo e escrever nos componentes
 
-            ''' --------------------------------------------------------------------------'''
-
             window_archive = open(window_path, 'r')
             atribute_line = ''
             last_atribute = ''
@@ -112,14 +99,11 @@ class Pryeact:
             components_declaration = components.copy()
             # Enviar os códigos para os arquivos corretamente
             for line in window_archive:
-                # a partir do retranslateUi, todas as linhas devem ser escritas no arquivo principal
-
-                # condição especifica
                 if 'QtCore.Qt' in line:
                     app_archive.write(line)
                     continue
+                # A partir do retranslateUi, todas as linhas devem ser escritas no arquivo principal
                 if 'def retranslateUi' in line:
-                    print('escrvendo dps do retranslate')
                     arquivo = open(window_path, 'r')
                     write = 0
                     for lines in arquivo:
@@ -137,8 +121,6 @@ class Pryeact:
                     continue
                 # escrever a declaracao do componente no arquivo principal
                 if 'self.' in line.lstrip()[:5]:
-                    #print("entrei - 0")
-                    #print(line)
                     atribute_line = line.lstrip().replace(' = ', '.').split('.')[1]
                     if atribute_line != last_atribute:
                         last_atribute = atribute_line
@@ -165,11 +147,9 @@ class Pryeact:
                                                 lista_parametros = components_declaration[componente].replace(', ',' ').replace('self.', '').split()
 
                                                 for parametro in lista_parametros:
-                                                    print(componente, parametro, lista_parametros, components_declaration.keys())
                                                     # verificar se o parametro ainda nao foi declarado no arquivo principal
                                                     if parametro not in components_declaration.keys():
                                                         x += 1
-                                                print(x, len(lista_parametros))
                                                 if x == len(lista_parametros):
                                                     # todos os parametros já foram declarados
                                                     # declarar atributo com esses parametros
@@ -185,30 +165,20 @@ class Pryeact:
                                                         del components_declaration[componente]
                             else:
                                 app_archive.write(f'        self.{atribute_line} = {atribute_line}()\n')
-                # melhorar ds daqui
                 if ('font' in line or 'sizePolicy' in line or 'spacerItem' in line) and atribute_line:
-                    # print("entrei - 1")
-                    #print(line)
                     component = open(f'{name_path}/{last_atribute}/{last_atribute}.py', 'a')
                     component.write(line.replace('self.', ''))
                     component.close()
                 elif 'self.' in line.lstrip()[:5] and line.count('self') < 2:
-                    #print("entrei - 2")
-                    #print(line)
                     write_component = 1
                     component = open(f'{name_path}/{atribute_line}/{atribute_line}.py', 'a')
                     component.write(line.replace('self.', ''))
                     component.close()
                 elif write_component or "=" not in line and line.count('self') > 1:
-                    #print("entrei - 3")
-                    #print(line)
                     component = open(f'{name_path}/{atribute_line}/{atribute_line}.py', 'a')
                     component.write(line.replace('self.', ''))
                     component.close()
                 else:
-                    # essa linha possui um novo atributo
-                    #print("entrei - 4")
-                    #print(line)
                     write_component = 0
                     app_archive.write(line)
 
@@ -217,10 +187,12 @@ class Pryeact:
                 component = open(f'{name_path}/{atribute}/{atribute}.py', 'a')
                 component.write(f'        return {atribute}\n')
                 component.close()
-        #except FileExistsError:
-            # perguntar ao usuário se renomeia ou ignora
-            #pass
-        #except FileNotFoundError:
-            #print('Diretório não existente')
+                app_archive.close()
+            print(f'SUCCESS: Window created in {os.getcwd()}/{page_name}')
+        except FileExistsError:
+            print("ERROR: Já existe um diretorio com esse nome!")
+        except FileNotFoundError:
+            print('ERROR: Arquivo não encontrado!\n'
+                  f'{window_path}')
         except NameError:
             pass
