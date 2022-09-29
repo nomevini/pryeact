@@ -224,7 +224,3 @@ class Pryeact:
             #print('Diretório não existente')
         except NameError:
             pass
-
-
-tela = Pryeact()
-tela.componentize('tela_main', 'pages/tela_main.py', 'Ui_main')
