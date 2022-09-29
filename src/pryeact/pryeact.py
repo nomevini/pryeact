@@ -117,17 +117,27 @@ class Pryeact:
                 if 'QtCore.Qt.AlignHCenter' in line:
                     app_archive.write(line)
                     continue
-                if 'retranslateUi' in line:
-                    for line in window_archive:
-                        app_archive.write(line)
+                if 'def retranslateUi' in line:
+                    print('escrvendo dps do retranslate')
+                    arquivo = open(window_path, 'r')
+                    write = 0
+                    for lines in arquivo:
+                        if 'def retranslateUi' in lines:
+                            write = 1
+                        if write:
+                            app_archive.write(lines)
                     break
+                if 'retranslateUi' in line:
+                    app_archive.write(f'{line}\n\n')
+
+                    continue
                 if 'MainWindow' in line.lstrip()[:12]:
                     app_archive.write(line)
                     continue
                 # escrever a declaracao do componente no arquivo principal
                 if 'self.' in line.lstrip()[:5]:
-                    print("entrei - 0")
-                    print(line)
+                    #print("entrei - 0")
+                    #print(line)
                     atribute_line = line.lstrip().replace(' = ', '.').split('.')[1]
                     if atribute_line != last_atribute:
                         last_atribute = atribute_line
@@ -136,48 +146,80 @@ class Pryeact:
                         # os itens depois que declarados
                         if atribute_line in components_declaration.keys():
                             if components_declaration[atribute_line] is not None:
-                                if 'MainWindow' in components[atribute_line] and 'centralwidget' in atribute_line or 'statusbar' in atribute_line:
+                                if 'MainWindow' in components[atribute_line] or 'statusbar' in atribute_line:
                                     app_archive.write(
                                         f'        self.{atribute_line} = {atribute_line}({components[atribute_line]})\n')
+                                    if atribute_line in components_declaration.keys():
+                                        del components_declaration[atribute_line]
                                 else:
-                                    app_archive.write(f'        self.{atribute_line} = {atribute_line}(self.{components[atribute_line]})\n')
+                                    # iterar pela lista de components e adicionar escrever aqueles que já possuem seus
+                                    # parametros já declarados
+                                    # continuar mexendo aqui
+                                    # iterar na lista de componentes
+                                    while components_declaration.keys():
+                                        for componente in components.keys():
+                                            if componente in components_declaration.keys():
+                                                x = 0
+                                                lista_parametros = []
+                                                lista_parametros = components_declaration[componente].replace(', ',' ').replace('self.', '').split()
+
+                                                for parametro in lista_parametros:
+                                                    print(componente, parametro, lista_parametros, components_declaration.keys())
+                                                    # verificar se o parametro ainda nao foi declarado no arquivo principal
+                                                    if parametro not in components_declaration.keys():
+                                                        x += 1
+                                                print(x, len(lista_parametros))
+                                                if x == len(lista_parametros):
+                                                    # todos os parametros já foram declarados
+                                                    # declarar atributo com esses parametros
+                                                    if 'MainWindow' in components[componente] or 'statusbar' in componente:
+                                                        app_archive.write(
+                                                            f'        self.{componente} = {componente}({components[componente]})\n')
+                                                        if componente in components_declaration.keys():
+                                                            del components_declaration[componente]
+                                                    else:
+                                                        app_archive.write(
+                                                            f'        self.{componente} = {componente}(self.{components[componente]})\n')
+                                                    if componente in components_declaration.keys():
+                                                        del components_declaration[componente]
                             else:
                                 app_archive.write(f'        self.{atribute_line} = {atribute_line}()\n')
-                            del components_declaration[atribute_line]
                 # melhorar ds daqui
                 if ('font' in line or 'sizePolicy' in line or 'spacerItem' in line) and atribute_line:
-                    print("entrei - 1")
-                    print(line)
+                    # print("entrei - 1")
+                    #print(line)
                     component = open(f'{name_path}/{last_atribute}/{last_atribute}.py', 'a')
                     component.write(line.replace('self.', ''))
                     component.close()
                 elif 'self.' in line.lstrip()[:5] and line.count('self') < 2:
-                    print("entrei - 2")
-                    print(line)
+                    #print("entrei - 2")
+                    #print(line)
                     write_component = 1
                     component = open(f'{name_path}/{atribute_line}/{atribute_line}.py', 'a')
                     component.write(line.replace('self.', ''))
                     component.close()
                 elif write_component or "=" not in line and line.count('self') > 1:
-                    print("entrei - 3")
-                    print(line)
+                    #print("entrei - 3")
+                    #print(line)
                     component = open(f'{name_path}/{atribute_line}/{atribute_line}.py', 'a')
                     component.write(line.replace('self.', ''))
                     component.close()
                 else:
                     # essa linha possui um novo atributo
-                    print("entrei - 4")
-                    print(line)
+                    #print("entrei - 4")
+                    #print(line)
                     write_component = 0
                     app_archive.write(line)
-        except FileExistsError:
+
+            # escrever os returns
+            for atribute in components:
+                component = open(f'{name_path}/{atribute}/{atribute}.py', 'a')
+                component.write(f'        return {atribute}\n')
+                component.close()
+        #except FileExistsError:
             # perguntar ao usuário se renomeia ou ignora
-            pass
+            #pass
         #except FileNotFoundError:
             #print('Diretório não existente')
         except NameError:
             pass
-
-
-tela = Pryeact()
-tela.componentize('login', 'pages/login.py', 'login')
