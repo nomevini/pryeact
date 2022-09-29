@@ -16,7 +16,8 @@ class Pryeact:
         spec = importlib.util.spec_from_file_location(f'{window_name}', f'{window_path}')
         foo = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(foo)
-        window = foo.Ui_MainWindow()
+        create_window = getattr(foo, page_name)
+        window = create_window()
         window.setupUi(self.MainWindow)
         # carregar os atributos
         atributes = list(window.__dict__.keys())
@@ -51,7 +52,7 @@ class Pryeact:
                 if line.count('self') > 1 or '(MainWindow)' in line:
                     need_import = line.lstrip().replace(' = ', '.').split('.')[1]
                     imported_component = line.replace('(', '!').replace(')', '!').replace('self.', '').split('!')[1]
-                    if 'QtCore.Qt.AlignHCenter' in line:
+                    if 'QtCore.Qt' in line:
                         continue
                     elif need_import in components.keys():
                         components[need_import].append(imported_component)
@@ -114,7 +115,7 @@ class Pryeact:
                 # a partir do retranslateUi, todas as linhas devem ser escritas no arquivo principal
 
                 # condição especifica
-                if 'QtCore.Qt.AlignHCenter' in line:
+                if 'QtCore.Qt' in line:
                     app_archive.write(line)
                     continue
                 if 'def retranslateUi' in line:
@@ -223,3 +224,9 @@ class Pryeact:
             #print('Diretório não existente')
         except NameError:
             pass
+
+# EXAMPLE
+'''
+tela = Pryeact()
+tela.componentize('tela_main', 'pages/tela_main.py', 'Ui_main')
+'''
