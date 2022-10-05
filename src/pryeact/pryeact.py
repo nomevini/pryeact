@@ -3,49 +3,16 @@ from PyQt5 import QtWidgets
 import sys
 import os
 
-"""
-The library is capable of converting a .py file from a window generated in
-pyQt5 to a componentized application.
-"""
-
 
 class Pryeact:
-    """
-    Class used to instantiate a Pryeact object capable of componetization
-
-    Attributes
-    ----------
-    app : QtWidgets.QApplication
-        A pyQt5 application to launch the window
-    MainWindow : QtWidgets.QMainWindow
-        Main window where PyQt5 window will be loaded
-
-    Methods
-    -------
-    componentize(window_name, window_path, page_name)
-        Transforms the .py window into a multi-component application
-    """
     def __init__(self):
         self.app = QtWidgets.QApplication(sys.argv)
         self.MainWindow = QtWidgets.QMainWindow()
 
     # example windows_name=login, window_path=pages/login.py
     def componentize(self, window_name, window_path, page_name):
-        """
-        Transforms the .py window into a multi-component application
-
-        Parameters
-        ----------
-        window_name : str
-            name of the file that contains the pyqt5 window
-        window_path : str
-            directory where the .py file of the window is located
-        page_name : str
-            pyqt5 window class name present in window_path
-        """
-
+        # carregar a tela
         try:
-            # carregar a tela
             global app_archive, component, path_component, atribute_line, name_path
             spec = importlib.util.spec_from_file_location(f'{window_name}', f'{window_path}')
             foo = importlib.util.module_from_spec(spec)
@@ -54,7 +21,8 @@ class Pryeact:
             window = create_window()
             window.setupUi(self.MainWindow)
 
-            # criar o diretorio para os componentes
+            # carregar os atributos
+            atributes = list(window.__dict__.keys())
             name_path = ''
             path = './'
             name_path = f'{path}{page_name}/components'
@@ -63,7 +31,7 @@ class Pryeact:
             # criar aquivo principal
             app_archive = open(f'{path}{page_name}/app.py', 'w')
 
-            # Criar dicionario com todos os componentes da tela e seus parametros
+            # descobrir quais atributos precisam de imports para criar os paramêtros
             window_archive = open(window_path, 'r')
             components = {}
             for line in window_archive:
@@ -81,7 +49,6 @@ class Pryeact:
                     else:
                         components[need_import] = [imported_component]
 
-            # adicionar no dicionario de componentes aquels que nao precisam de imports
             window_archive = open(window_path, 'r')
             for line in window_archive:
                 if 'retranslateUi' in line:
@@ -92,19 +59,16 @@ class Pryeact:
                         components[component] = None
             window_archive.close()
 
-            # Criar as pastas e arquivos dos componentes e fazer a base do arquivo (imports e declaracao da funcao)
             for atribute, parameters in components.items():
-
-                # criar pasta para componente
+                # criar pasta para componente e criar componente
                 path_component = f'{name_path}/{atribute}'
                 os.makedirs(path_component)
 
                 # criar arquivo python com codigo do componente
                 component = open(f'{path_component}/{atribute}.py', 'w')
 
-                # criar linhas de imports e declaracao do componente em cada aquivo dos componentes
                 if parameters is not None:
-                    # o componente precisa de parametros para funcionar
+                    # tem parametro
                     all_parameters = ''
                     for index, parameter in enumerate(parameters):
                         final_index = len(parameters)
@@ -117,15 +81,15 @@ class Pryeact:
                                     f'def {atribute}({all_parameters}):\n')
                     components[atribute] = all_parameters.replace(', ', ', self.')
                 else:
-                    # o componente nao precisa de parametros para funcionar
                     component.write(f'from PyQt5 import QtWidgets, QtGui, QtCore\n\n\n'
                                     f'def {atribute}():\n')
                 # adicionando os imports no arquivo principal (app.py)
                 app_archive.write(f'from components.{atribute}.{atribute} import {atribute}\n')
                 component.close()
-            app_archive.write('\n\n')
 
+            app_archive.write('\n\n')
             # fazer leitura do arquivo e escrever nos componentes
+
             window_archive = open(window_path, 'r')
             atribute_line = ''
             last_atribute = ''
@@ -133,7 +97,6 @@ class Pryeact:
 
             # copia do dicionario components para ser usado na declaracao dos componentes no arquivo principal
             components_declaration = components.copy()
-
             # Enviar os códigos para os arquivos corretamente
             for line in window_archive:
                 if 'QtCore.Qt' in line:
@@ -226,11 +189,10 @@ class Pryeact:
                 component.close()
                 app_archive.close()
             print(f'SUCCESS: Window created in {os.getcwd()}/{page_name}')
-
         except FileExistsError:
             print("ERROR: Já existe um diretorio com esse nome!")
         except FileNotFoundError:
             print('ERROR: Arquivo não encontrado!\n'
                   f'{window_path}')
         except NameError:
-            print('ERROR: Arquivo .py não encontrado!\n')
+            pass
